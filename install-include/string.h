@@ -9,6 +9,10 @@ extern "C" {
 
 char *strchrnul(const char *s, int c);
 
+/* Torrekie: it seems compiler automatically optimizes mempcpy if provided declaration,
+   but we are still providing implementation for mempcpy anyway. */
+void *mempcpy(void *__restrict dst, const void *__restrict src, size_t len);
+
 #ifdef __cplusplus
 }
 #endif
