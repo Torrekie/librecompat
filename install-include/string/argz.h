@@ -29,7 +29,7 @@ __BEGIN_DECLS
    operating system.  */
 #ifndef __error_t_defined
 # define __error_t_defined 1
-typedef int error_t;
+typedef errno_t error_t;
 #endif
 
 /* Make a '\0' separated arg vector from a unix argv vector, returning it in
