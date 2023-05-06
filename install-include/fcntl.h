@@ -11,7 +11,11 @@
 #define POSIX_FADV_DONTNEED     4 /* Don't need these pages.  */
 #define POSIX_FADV_NOREUSE      5 /* Data will be accessed once.  */
 
+__BEGIN_DECLS
+
 int posix_fallocate(int fd, off_t offset, off_t len);
 int posix_fadvise(int fd, off_t offset, off_t len, int advice);
+
+__END_DECLS
 
 #endif /* _LIBRECOMPAT_FCNTL_H_ */
