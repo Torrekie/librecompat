@@ -202,10 +202,12 @@
 # define _ISOC11_SOURCE	1
 # undef  _ISOC2X_SOURCE
 # define _ISOC2X_SOURCE	1
+#if !__APPLE__
 # undef  _POSIX_SOURCE
 # define _POSIX_SOURCE	1
 # undef  _POSIX_C_SOURCE
 # define _POSIX_C_SOURCE	200809L
+#endif
 # undef  _XOPEN_SOURCE
 # define _XOPEN_SOURCE	700
 # undef  _XOPEN_SOURCE_EXTENDED
@@ -280,15 +282,17 @@
 # if !defined _POSIX_SOURCE && !defined _POSIX_C_SOURCE
 #  define __USE_POSIX_IMPLICITLY	1
 # endif
+#if !__APPLE__
 # undef  _POSIX_SOURCE
 # define _POSIX_SOURCE	1
 # undef  _POSIX_C_SOURCE
 # define _POSIX_C_SOURCE	200809L
 #endif
+#endif
 
 #if ((!defined __STRICT_ANSI__					\
       || (defined _XOPEN_SOURCE && (_XOPEN_SOURCE - 0) >= 500))	\
-     && !defined _POSIX_SOURCE && !defined _POSIX_C_SOURCE)
+     && !defined _POSIX_SOURCE && !defined _POSIX_C_SOURCE) && !defined(__APPLE__)
 # define _POSIX_SOURCE	1
 # if defined _XOPEN_SOURCE && (_XOPEN_SOURCE - 0) < 500
 #  define _POSIX_C_SOURCE	2
@@ -309,7 +313,7 @@
    comprehensive support for multithreaded code.  Using them never
    lowers the selected level of POSIX conformance, only raises it.  */
 #if ((!defined _POSIX_C_SOURCE || (_POSIX_C_SOURCE - 0) < 199506L) \
-     && (defined _REENTRANT || defined _THREAD_SAFE))
+     && (defined _REENTRANT || defined _THREAD_SAFE)) && !defined(__APPLE__)
 # define _POSIX_SOURCE   1
 # undef  _POSIX_C_SOURCE
 # define _POSIX_C_SOURCE 199506L
