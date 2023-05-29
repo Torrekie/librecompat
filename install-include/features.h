@@ -474,6 +474,7 @@
 #undef  __GNU_LIBRARY__
 #define __GNU_LIBRARY__ 6
 
+#if 0 // Don't define __GLIBC__
 /* Major and minor version number of the GNU C library package.  Use
    these macros to test for features in specific releases.  */
 #define	__GLIBC__	2
@@ -481,6 +482,8 @@
 
 #define __GLIBC_PREREQ(maj, min) \
 	((__GLIBC__ << 16) + __GLIBC_MINOR__ >= ((maj) << 16) + (min))
+
+#endif
 
 /* This is here only because every header file already includes this one.  */
 #ifndef __ASSEMBLER__

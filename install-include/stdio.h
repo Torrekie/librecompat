@@ -7,7 +7,7 @@ __BEGIN_DECLS
 
 typedef ssize_t cookie_read_function_t(void *, char *, size_t);
 typedef ssize_t cookie_write_function_t(void *, const char *, size_t);
-typedef int cookie_seek_function_t(void *, off64_t *, int);
+typedef int cookie_seek_function_t(void *, int64_t *, int);
 typedef int cookie_close_function_t(void *);
 typedef struct {
 	cookie_read_function_t	*read;
