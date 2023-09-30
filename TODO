@@ -1,3 +1,9 @@
 [x] argz
 [ ] argp
+[ ] inotify
 [ ] __progname_full
+[ ] spinlock
+
+Pre Darwin 20:
+[ ] preadv/pwritev
+[ ] strtonum
