@@ -15,6 +15,7 @@ typedef struct {
 	cookie_seek_function_t	*seek;
 	cookie_close_function_t	*close;
 } cookie_io_functions_t;
+int	fdclose(FILE *fp, int *fdp);
 FILE	*fopencookie(void *, const char *, cookie_io_functions_t);
 
 __END_DECLS
