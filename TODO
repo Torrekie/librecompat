@@ -7,3 +7,13 @@
 Pre Darwin 20:
 [ ] preadv/pwritev
 [ ] strtonum
+
+macOS compat:
+[ ] objc
+[ ] libc
+
+Documentations:
+[ ] man3
+
+Configurations:
+[ ] /etc/librecompat.conf

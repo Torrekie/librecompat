@@ -1,4 +1,7 @@
 # librecompat
+
+Reimplemented userspace libc compatibility layer for Darwin.
+
 ***
 ## What and Why?
 
@@ -8,7 +11,7 @@ Since Open-Source world has many contributors that using different C implementat
 
 ## How you impl it?
 
-For some simple C extensions I could just do it by myself (like `pipe2` which just operating fds on `pipe`), but most scene we are facing complex problems (e.g. `re_compile_*` from GNU C) that needs porting their original implementations to Darwin with patches, I KNOW this could cause some sort of licensing problems, but for current stage I want to make sure thoes compat functions is working as expected before dealing with these licenses.
+For some simple C extensions I could just do it by myself (like `pipe2` which just operating fds on `pipe`), but most scene we are facing complex problems (e.g. `re_compile_*` from GNU C) that needs porting their original implementations to Darwin with patches, I KNOW this could cause some sort of licensing problems, but for current stage I want to make sure those compat functions is working as expected before dealing with these licenses.
 
 ### Current orig sources this library uses
 
@@ -64,7 +67,8 @@ sed -i "s|'/usr/lib/libSystem.B.dylib'|'/usr/local/lib/librecompat.0.dylib'|g"
 sed -i "s|___crashreporter_info__, |$(llvm-nm librecompat.dylib -U --extern-only --just-symbol-name | xargs -L1 printf "%s, ")___crashreporter_info__, |g" /usr/local/share/SDKs/iPhoneOS.sdk/usr/lib/libSystem.tbd
 # Well done, use your modified SDK
 export SDKROOT=/usr/local/share/SDKs/iPhoneOS.sdk
-cc -isysroot /usr/local/share/SDKs/iPhoneOS.sdk test.c
+# Use librecompat headers
+cc -I/usr/local/include/librecompat test.c
 ```
 
 ## Currently provided functions
@@ -101,6 +105,13 @@ cc -isysroot /usr/local/share/SDKs/iPhoneOS.sdk test.c
 - [x] `accept4` in `<sys/socket.h>`
 - [x] `ppoll` in `<poll.h>`
 - [x] `strchrnul` in `<string.h>`
+
+## Limitations
+
+- As this library implement functions in pure userspace, some of them might not having desired efficiency than others does (like `accept4`).
+- While not building with re-export configured, you will have to add linker flags to ensure symbols can be found by linker.
+- While building with re-export configured, you will have to edit original libSystem.tbd to ensure librecompat is used as libSystem, and symbols should also de defined in tbd.
+- You should not use `librecompat` while system shipped functions already meets the required conditions.
 
 ## TODO
 
