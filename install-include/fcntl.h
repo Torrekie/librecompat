@@ -3,7 +3,7 @@
 
 #include_next <fcntl.h>
 
-// bits/fcntl.h
+/* bits/fcntl.h */
 #define POSIX_FADV_NORMAL       0 /* No further special treatment.  */
 #define POSIX_FADV_RANDOM       1 /* Expect random page references.  */
 #define POSIX_FADV_SEQUENTIAL   2 /* Expect sequential page references.  */

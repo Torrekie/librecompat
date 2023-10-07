@@ -318,7 +318,7 @@ typedef enum
   _REG_BADRPT	= REG_BADRPT,	/* No preceding re for repetition op.  */
 
   /* Error codes we've added.  */
-  // Torrekie: Make sure this not conflicting with existing errcode
+  /* Torrekie: Make sure this not conflicting with existing errcode */
   _REG_EEND	= 18,		/* Premature end.  */
   _REG_ESIZE	= 19,		/* Too large (e.g., repeat count too large).  */
   _REG_ERPAREN	= 20		/* Unmatched ) or \); not returned from regcomp.  */

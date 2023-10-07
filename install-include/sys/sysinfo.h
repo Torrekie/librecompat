@@ -46,4 +46,4 @@ extern long int get_avphys_pages (void) __THROW;
 
 __END_DECLS
 
-#endif //
+#endif

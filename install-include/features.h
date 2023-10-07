@@ -472,7 +472,7 @@
 #undef  __GNU_LIBRARY__
 #define __GNU_LIBRARY__ 6
 
-#if 0 // Don't define __GLIBC__
+#if 0 /* Don't define __GLIBC__ */
 /* Major and minor version number of the GNU C library package.  Use
    these macros to test for features in specific releases.  */
 #define	__GLIBC__	2
