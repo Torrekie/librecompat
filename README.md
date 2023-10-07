@@ -75,13 +75,14 @@ cc -I/usr/local/include/librecompat test.c
 
 ### From GNU C Library
 - [x] `<argz.h>` `<string/argz.h>`
+- [x] `<getopt.h>` and it's relatives
 - [x] `<regex.h>`
 - [x] `<features.h>`
 - [x] `<malloc/dynarray.h>`
 - [x] `<misc/sys/cdefs.h>`
 - [x] `<bits/long-double.h>` `<bits/wordsize.h>`
 - [x] `<stdc-predef.h>`
-- [x] `mremap` in `<sys/mman.h>`
+- [ ] `mremap` in `<sys/mman.h>`
 - [x] `__set_errno` in `<errno.h>`
 - [x] `_Static_assert` in `<sys/cdefs.h>`
 ### From musl libc
