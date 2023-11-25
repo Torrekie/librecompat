@@ -89,7 +89,7 @@ cc -I/usr/local/include/librecompat test.c
 - [x] `getservbyname_r`, `getservbyport_r` in `<netdb.h>`
 ### From FreeBSD
 - [x] `fopencookie`, `fdclose` in `<stdio.h>`
-- [x] `mempcpy` in `<string.h>`
+- [x] `mempcpy`, `memrchr` in `<string.h>`
 ### From NetBSD
 - [x] `setservent_r`, `getservent_r`, `endservent_r` in `<netdb.h>`
 ### From Apple Libc
