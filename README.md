@@ -85,6 +85,7 @@ cc -I/usr/local/include/librecompat test.c
 - [ ] `mremap` in `<sys/mman.h>`
 - [x] `__set_errno` in `<errno.h>`
 - [x] `_Static_assert` in `<sys/cdefs.h>`
+- [x] `strverscmp` in `<strings.h>`
 ### From musl libc
 - [x] `getservbyname_r`, `getservbyport_r` in `<netdb.h>`
 ### From FreeBSD
@@ -106,10 +107,11 @@ cc -I/usr/local/include/librecompat test.c
 - [x] `accept4` in `<sys/socket.h>`
 - [x] `ppoll` in `<poll.h>`
 - [x] `strchrnul` in `<string.h>`
+- [x] macOS compatible `sendfile` in `<sys/socket.h>` that not compiled to iOS
 
 ## Limitations
 
-- As this library implement functions in pure userspace, some of them might not having desired efficiency than others does (like `accept4`).
+- As this library implement functions in pure userspace, some of them might not having desired efficiency than others does (like `accept4`, `sendfile`, etc.).
 - While not building with re-export configured, you will have to add linker flags to ensure symbols can be found by linker.
 - While building with re-export configured, you will have to edit original libSystem.tbd to ensure librecompat is used as libSystem, and symbols should also de defined in tbd.
 - You should not use `librecompat` while system shipped functions already meets the required conditions.
