@@ -1,16 +1,26 @@
 [x] argz
 [ ] argp
-[ ] inotify
 [ ] __progname_full
 [ ] spinlock
+[ ] GNU poll
+[ ] GNU utmpx
 
 Pre Darwin 20:
 [ ] preadv/pwritev
 [ ] strtonum
 
+Reexport from other libraries:
+[ ] epoll
+[ ] inotify
+
 macOS compat:
 [ ] objc
 [ ] libc
+
+Missing syscalls:
+[x] sendfile
+[ ] SysV Semaphore (sys/sem.h)
+[ ] POSIX Semaphore (sem_init/sem_getvalue/sem_destroy)
 
 Documentations:
 [ ] man3
