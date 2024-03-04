@@ -8,7 +8,11 @@
 
 __BEGIN_DECLS
 
+#if __GNUC__ > 4
+int accept4(int s, struct sockaddr *__restrict addr, socklen_t *__restrict addrlen, int flags);
+#else
 int accept4(int s, struct sockaddr *restrict addr, socklen_t *restrict addrlen, int flags);
+#endif
 
 __END_DECLS
 
