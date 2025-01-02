@@ -1,8 +1,17 @@
 #ifndef _LIBRECOMPAT_UNISTD_H_
 #define _LIBRECOMPAT_UNISTD_H_
 
+/* Wrapper defines, for use of librecompat */
 #ifndef getopt
 #define getopt compat_getopt
+#endif
+
+#ifndef getopt_long
+#define getopt_long compat_getopt_long
+#endif
+
+#ifndef getopt_long_only
+#define getopt_long_only compat_getopt_long_only
 #endif
 
 #include_next <unistd.h>

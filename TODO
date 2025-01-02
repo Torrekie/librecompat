@@ -20,7 +20,8 @@ macOS compat:
 Missing syscalls:
 [x] sendfile
 [ ] SysV Semaphore (sys/sem.h)
-[ ] POSIX Semaphore (sem_init/sem_getvalue/sem_destroy)
+[ ] SysV Shared Memory (sys/shm.h)
+[ ] POSIX Semaphores (sem_init/sem_getvalue/sem_destroy)
 
 Documentations:
 [ ] man3
