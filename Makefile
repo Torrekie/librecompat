@@ -1,5 +1,7 @@
 TARGET = librecompat.0.dylib
+STATIC_TARGET = librecompat.a
 CC ?= ccios
+AR ?= ar
 CFLAGS = -isystem build-include/ -I src/ -DPRIVATE -Os -flto
 LDFLAGS += -flto -Wl,-dead_strip
 INSTALL_RPATH = -rpath /usr/lib
@@ -90,13 +92,30 @@ endif
 
 OBJS=   ${SRCS:.c=.o}
 
-all: ${TARGET}
+all: ${TARGET} ${STATIC_TARGET}
 
 ${TARGET}: ${OBJS}
 	${CC} ${LDFLAGS} -o $@ ${OBJS}
+
+${STATIC_TARGET}: ${OBJS}
+	${AR} rcs $@ ${OBJS}
 
 .c.o:
 	${CC} ${CFLAGS} -c $< -o $@
 
 clean:
-	rm -f ${OBJS} ${TARGET}
+	rm -f ${OBJS} ${TARGET} ${STATIC_TARGET}
+
+ifeq ($(ROOTLESS),1)
+PREFIX = /var/jb/usr
+else
+PREFIX = /usr
+endif
+
+install: all
+	install -d $(DESTDIR)$(PREFIX)/lib
+	install -d $(DESTDIR)$(PREFIX)/include
+	install -m 755 $(TARGET) $(DESTDIR)$(PREFIX)/lib/
+	ln -sf $(TARGET) $(DESTDIR)$(PREFIX)/lib/librecompat.dylib
+	install -m 644 $(STATIC_TARGET) $(DESTDIR)$(PREFIX)/lib/
+	cp -R install-include/* $(DESTDIR)$(PREFIX)/include/
