@@ -7,7 +7,15 @@
 #include <fcntl.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <paths.h>
 #include "lookup.h"
+
+#ifdef LIBRECOMPAT_ROOTLESS
+#ifdef _PATH_SERVICES
+#undef _PATH_SERVICES
+#endif
+#define _PATH_SERVICES "/var/jb/etc/services"
+#endif
 
 int __lookup_serv(struct service buf[static MAXSERVS], const char *name, int proto, int flags)
 {
@@ -38,7 +46,7 @@ int __lookup_serv(struct service buf[static MAXSERVS], const char *name, int pro
 	size_t l = strlen(name);
 
 	unsigned char _buf[1032];
-	FILE _f, *f = fopen("/etc/services", "rb");
+	FILE _f, *f = fopen(_PATH_SERVICES, "rb");
 	if (!f) return EAI_SERVICE;
 
 	while (fgets(line, sizeof line, f) && cnt < MAXSERVS) {

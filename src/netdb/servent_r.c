@@ -8,6 +8,13 @@
 #include <errno.h>
 #include <os/availability.h>
 
+#ifdef LIBRECOMPAT_ROOTLESS
+#ifdef _PATH_SERVICES
+#undef _PATH_SERVICES
+#endif
+#define _PATH_SERVICES "/var/jb/etc/services"
+#endif
+
 extern void *reallocarray(void * in_ptr, size_t nmemb, size_t size) __DARWIN_EXTSN(reallocarray);
 
 struct servent_data {

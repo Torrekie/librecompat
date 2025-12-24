@@ -239,7 +239,11 @@ we_askshell(const char *words, wordexp_t *we, int flags)
 		if ((spawnerr = posix_spawn_file_actions_init(&file_actions)) != 0) break;
 		do {
 			char *argv[7] = {"sh"};
+#ifdef LIBRECOMPAT_ROOTLESS
+			const char cmd[] = "[ $# -gt 0 ] && export IFS=\"$1\";/var/jb/usr/lib/system/wordexp-helper ";
+#else
 			const char cmd[] = "[ $# -gt 0 ] && export IFS=\"$1\";/usr/lib/system/wordexp-helper ";
+#endif
 			int a = 1;
 			char *buf;
 			int buflen;
@@ -492,7 +496,9 @@ we_check(const char *words, int flags)
 				dquote ^= 1;
 			break;
 		case '`':
-			if (quote + squote == 0 && flags & WRDE_NOCMD)
+			if (quote + squote != 0)
+				break;
+			if (flags & WRDE_NOCMD)
 				return (WRDE_CMDSUB);
 			while ((c = *words++) != '\0' && c != '`')
 				if (c == '\\' && (c = *words++) == '\0')

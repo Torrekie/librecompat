@@ -1,6 +1,14 @@
 #ifndef _LIBRECOMPAT_STDIO_H_
 #define _LIBRECOMPAT_STDIO_H_
 
+#include <librecompat/librecompat_config.h>
+
+#ifdef LIBRECOMPAT_ROOTLESS
+#ifndef popen
+#define popen compat_popen
+#endif
+#endif
+
 #include_next <stdio.h>
 
 __BEGIN_DECLS
@@ -17,6 +25,10 @@ typedef struct {
 } cookie_io_functions_t;
 int	fdclose(FILE *fp, int *fdp);
 FILE	*fopencookie(void *, const char *, cookie_io_functions_t);
+
+#ifdef LIBRECOMPAT_ROOTLESS
+FILE *compat_popen(const char *, const char *);
+#endif
 
 __END_DECLS
 
