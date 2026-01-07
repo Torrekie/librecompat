@@ -1,6 +1,8 @@
 #ifndef _LIBRECOMPAT_CONFIG_H_
 #define _LIBRECOMPAT_CONFIG_H_
 
+#include <os/base.h>
+
 #define LIBRECOMPAT_ROOTLESS 1
 
 /* Determine if rootless by target version */

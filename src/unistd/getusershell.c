@@ -54,8 +54,7 @@
  */
 
 #ifdef LIBRECOMPAT_ROOTLESS
-#include "../locale/xlocale_private.h"
-
+#include <xlocale.h>
 #include <sys/param.h>
 #include <sys/file.h>
 #include <sys/stat.h>
@@ -129,7 +128,7 @@ initshells(void)
 	register char **sp, *cp;
 	register FILE *fp;
 	struct stat statb;
-	locale_t loc = __current_locale();
+	locale_t loc = uselocale(NULL);
 
 	if (shells != NULL)
 		free(shells);

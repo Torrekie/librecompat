@@ -2,8 +2,15 @@ TARGET = librecompat.0.dylib
 STATIC_TARGET = librecompat.a
 CC ?= ccios
 AR ?= ar
-CFLAGS = -isystem build-include/ -I src/ -DPRIVATE -Os -flto
-LDFLAGS += -flto -Wl,-dead_strip
+CFLAGS = -isystem build-include/ -I src/ -DPRIVATE
+ifeq ($(DEBUG),1)
+CFLAGS += -O0 -g -gdwarf
+LDFLAGS += -O0 -g -gdwarf
+else
+CFLAGS += -Os -flto
+LDFLAGS +=  -Wl,-dead_strip
+endif
+
 INSTALL_RPATH = -rpath /usr/lib
 ifeq ($(ROOTLESS),1)
 CFLAGS += -DLIBRECOMPAT_ROOTLESS=1
@@ -56,6 +63,7 @@ SRCS=   src/argz/argz-addsep.c \
         src/sys/socket/accept4.c \
         src/sys/socket/sendfile.c \
         src/sys/sysinfo.c \
+        src/sys/utsname/uname.c \
         src/unistd/fdatasync.c \
         src/unistd/get_current_dir_name.c \
         src/unistd/getopt.c \
@@ -63,29 +71,9 @@ SRCS=   src/argz/argz-addsep.c \
         src/wordexp/wordexp.c
 
 ifeq ($(ROOTLESS),1)
-SRCS += src/locale/ascii.c \
-	src/locale/big5.c \
-	src/locale/collate.c \
-	src/locale/euc.c \
-	src/locale/gb18030.c \
-	src/locale/gb2312.c \
-	src/locale/gbk.c \
-	src/locale/ldpart.c \
-	src/locale/lmessages.c \
-	src/locale/lmonetary.c \
-	src/locale/lnumeric.c \
-	src/locale/mbsnrtowcs.c \
-	src/locale/mskanji.c \
-	src/locale/none.c \
-	src/locale/setlocale.c \
-	src/locale/setrunelocale.c \
-	src/locale/table.c \
-	src/locale/timelocal.c \
-	src/locale/utf2.c \
-	src/locale/utf8.c \
-	src/locale/wcsnrtombs.c \
-	src/locale/xlocale.c \
+SRCS += src/locale/setlocale.c \
 	src/sysctl/sysctl.c \
+	src/unistd/confstr.c \
 	src/unistd/getusershell.c \
 	src/stdio/popen.c
 endif
@@ -96,6 +84,7 @@ all: ${TARGET} ${STATIC_TARGET}
 
 ${TARGET}: ${OBJS}
 	${CC} ${LDFLAGS} -o $@ ${OBJS}
+	ldid -S $@
 
 ${STATIC_TARGET}: ${OBJS}
 	${AR} rcs $@ ${OBJS}
@@ -118,4 +107,5 @@ install: all
 	install -m 755 $(TARGET) $(DESTDIR)$(PREFIX)/lib/
 	ln -sf $(TARGET) $(DESTDIR)$(PREFIX)/lib/librecompat.dylib
 	install -m 644 $(STATIC_TARGET) $(DESTDIR)$(PREFIX)/lib/
-	cp -R install-include/* $(DESTDIR)$(PREFIX)/include/
+	mkdir -p $(DESTDIR)$(PREFIX)/include/librecompat
+	cp -R install-include/* $(DESTDIR)$(PREFIX)/include/librecompat/
