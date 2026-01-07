@@ -2,10 +2,6 @@
 
 #include_next <sys/cdefs.h>
 
-#ifndef __cplusplus
-# define _Static_assert(expr, diagnostic) _Static_assert (expr, diagnostic)
-#endif
-
 #include <misc/sys/cdefs.h>
 
 #endif
