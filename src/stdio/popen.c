@@ -232,4 +232,9 @@ compat_popen(const char *command, const char *type)
 	return (iop);
 }
 
+FILE *compat_popen$DARWIN_EXTSN(const char *command, const char *type)
+{
+	return compat_popen(command, type);
+}
+
 #endif
