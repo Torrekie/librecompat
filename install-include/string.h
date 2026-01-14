@@ -14,6 +14,8 @@ char *strchrnul(const char *s, int c);
 void *mempcpy(void *__restrict dst, const void *__restrict src, size_t len);
 void *memrchr(const void *s, int c, size_t n);
 
+int strverscmp (const char *s1, const char *s2);
+
 #ifdef __cplusplus
 }
 #endif
