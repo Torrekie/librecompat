@@ -10,4 +10,9 @@
 #define LIBRECOMPAT_ROOTLESS (__ENVIRONMENT_IPHONE_OS_VERSION_MIN_REQUIRED__ && __ENVIRONMENT_IPHONE_OS_VERSION_MIN_REQUIRED__ >= 150000)
 #endif
 
+/* Disable glibc getopt() by default, it sometimes could be problematic */
+#ifndef LIBRECOMPAT_GETOPT
+#define LIBRECOMPAT_GETOPT 0
+#endif
+
 #endif

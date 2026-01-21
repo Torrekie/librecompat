@@ -1,7 +1,13 @@
 #ifndef _LIBRECOMPAT_STDIO_H_
 #define _LIBRECOMPAT_STDIO_H_
 
+#if __has_include(<librecompat/librecompat_config.h>)
 #include <librecompat/librecompat_config.h>
+#elif __has_include("librecompat_config.h")
+#include "librecompat_config.h"
+#else
+#include <librecompat_config.h>
+#endif
 
 #ifdef LIBRECOMPAT_ROOTLESS
 #ifndef popen

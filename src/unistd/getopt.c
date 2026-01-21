@@ -73,7 +73,7 @@
    Also, when 'ordering' is RETURN_IN_ORDER,
    each non-option ARGV-element is returned here.  */
 
-// extern char *optarg;
+extern char *optarg;
 
 /* Index in ARGV of the next element to be scanned.
    This is used for communication to and from the caller
@@ -88,18 +88,18 @@
    how much of ARGV has been scanned so far.  */
 
 /* 1003.2 says this must be 1 before any call.  */
-// extern int optind = 1;
+extern int optind;
 
 /* Callers store zero here to inhibit the error message
    for unrecognized options.  */
 
-// extern int opterr = 1;
+extern int opterr;
 
 /* Set to an option character which was unrecognized.
    This must be initialized on some systems to avoid linking in the
    system's own getopt implementation.  */
 
-// extern int optopt = '?';
+extern int optopt;
 
 /* Keep a global copy of all internal members of getopt_data.  */
 
@@ -359,6 +359,7 @@ process_long_option (int argc, char **argv, const char *optstring,
       *(pfound->flag) = pfound->val;
       return 0;
     }
+  d->optopt = pfound->val;
   return pfound->val;
 }
 
@@ -475,7 +476,7 @@ _getopt_internal_r (int argc, char **argv, const char *optstring,
     print_errors = 0;
 
   /* Test whether ARGV[optind] points to a non-option argument.  */
-#define NONOPTION_P (argv[d->optind][0] != '-' || argv[d->optind][1] == '\0')
+#define NONOPTION_P (argv[d->optind] && (argv[d->optind][0] != '-' || argv[d->optind][1] == '\0'))
 
   if (d->__nextchar == NULL || *d->__nextchar == '\0')
     {
@@ -512,7 +513,7 @@ _getopt_internal_r (int argc, char **argv, const char *optstring,
 	 then exchange with previous non-options as if it were an option,
 	 then skip everything else like a non-option.  */
 
-      if (d->optind != argc && !strcmp (argv[d->optind], "--"))
+      if (d->optind != argc && argv[d->optind] && !strcmp (argv[d->optind], "--"))
 	{
 	  d->optind++;
 
@@ -529,7 +530,7 @@ _getopt_internal_r (int argc, char **argv, const char *optstring,
       /* If we have done all the ARGV-elements, stop the scan
 	 and back over any non-options that we skipped and permuted.  */
 
-      if (d->optind == argc)
+      if (d->optind == argc || (d->optind < argc && !argv[d->optind]))
 	{
 	  /* Set the next-arg-index to point at the non-options
 	     that we previously skipped, so the caller will digest them.  */
@@ -551,7 +552,7 @@ _getopt_internal_r (int argc, char **argv, const char *optstring,
 
       /* We have found another option-ARGV-element.
 	 Check whether it might be a long option.  */
-      if (longopts)
+      if (longopts && argv[d->optind])
 	{
 	  if (argv[d->optind][1] == '-')
 	    {
@@ -589,7 +590,10 @@ _getopt_internal_r (int argc, char **argv, const char *optstring,
 	}
 
       /* It is not a long option.  Skip the initial punctuation.  */
-      d->__nextchar = argv[d->optind] + 1;
+      if (argv[d->optind])
+        d->__nextchar = argv[d->optind] + 1;
+      else
+        d->__nextchar = NULL; /* Should not happen */
     }
 
   /* Look at and handle the next short option-character.  */
@@ -682,6 +686,7 @@ _getopt_internal_r (int argc, char **argv, const char *optstring,
 	    d->__nextchar = NULL;
 	  }
       }
+    d->optopt = c;
     return c;
   }
 }

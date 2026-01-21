@@ -1,3 +1,18 @@
+#if __has_include(<librecompat/librecompat_config.h>)
+#include <librecompat/librecompat_config.h>
+#elif __has_include("librecompat_config.h")
+#include "librecompat_config.h"
+#else
+#include <librecompat_config.h>
+#endif
+
+#if !defined(LIBRECOMPAT_GETOPT) || LIBRECOMPAT_GETOPT == 0
+/* Avoid further includes */
+#ifndef _GETOPT_H
+#define _GETOPT_H 1
+#endif
+#endif
+
 /* Declarations for getopt.
    Copyright (C) 1989-2023 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
