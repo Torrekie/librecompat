@@ -25,16 +25,17 @@
 
 #endif
 
-#include_next <unistd.h>
-
 #if defined(LIBRECOMPAT_ROOTLESS) && LIBRECOMPAT_ROOTLESS != 0
-// Redefine after including system header
-size_t confstr(int, char *, size_t) __asm("_compat_confstr");
+#ifndef confstr
+#define confstr compat_confstr
+#endif
 
 char *getusershell(void) __asm("_compat_getusershell");
 void setusershell(void) __asm("_compat_setusershell");
 void endusershell(void) __asm("_compat_endusershell");
 #endif
+
+#include_next <unistd.h>
 
 #ifdef  __USE_POSIX2
 /* Get definitions and prototypes for functions to process the
