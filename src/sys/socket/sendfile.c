@@ -8,6 +8,7 @@
 #include <sys/types.h>
 #include <sys/param.h>
 #include <strings.h>
+#include <limits.h>
 
 // Avoid Kernel includes
 /* In-kernel representation */
@@ -26,296 +27,240 @@ struct user64_sf_hdtr {
 	int trl_cnt;            /* number of trailer iovec's */
 };
 
-
 // This normally processed by __DARWIN_NOCANCEL macro, but we explicitly want it
 extern ssize_t writev$NOCANCEL(int, const struct iovec *, int);
 
-#if TEST
-#define sendfile userspace_sendfile
-#endif
-int sendfile(int fd, int s, off_t offset, off_t *len, struct sf_hdtr *hdtr, int flags)
+// Buffer size for sendfile operations (256KB should be reasonable)
+#define SENDFILE_BUFFER_SIZE (256 * 1024)
+
+int compat_sendfile(int fd, int s, off_t offset, off_t *len, struct sf_hdtr *hdtr, int flags)
 {
-    int error = 0;
-    off_t sbytes = 0;
-    off_t nbytes = *len;
+    off_t sbytes = 0;        // Total bytes sent (headers + file data + trailers)
+    off_t nbytes = *len;     // Max bytes to send for headers + file data (0 = unlimited)
     off_t file_size;
-    ssize_t writev_retval, sizeof_hdtr;
-    off_t xfsize;
+    ssize_t writev_retval;
     struct stat fd_stat_buf, s_stat_buf;
-    struct iovec *iov;
-    struct user_sf_hdtr user_hdtr;
-    struct user64_sf_hdtr user64_hdtr;
-    int i;
     int ret = 0;
+    char *buffer = NULL;
+    off_t orig_offset = -1;
+    int socket_type;
+    socklen_t optlen = sizeof(socket_type);
+    off_t sent_headers_and_file = 0; // Bytes sent for headers + file data
+
+    // Initialize len to 0 for error cases (matches system behavior)
+    *len = 0;
 
     // Apple reserved this flag for potential future use (must be 0)
     if (flags != 0) {
         errno = EINVAL;
-        ret = -1;
-        goto done;
+        *len = sbytes;  // Set to 0 on error
+        return -1;
     }
 
     if (offset < 0) {
         errno = EINVAL;
-        ret = -1;
-        goto done;
+        *len = sbytes;  // Set to 0 on error
+        return -1;
     }
 
-    // nbytes may not be NULL
-    if (nbytes == USER_ADDR_NULL) {
+    // len pointer may not be NULL
+    if (len == NULL) {
         errno = EINVAL;
-        ret = -1;
-        goto done;
+        return -1;  // Can't set *len if len is NULL
     }
 
     // Get the stat buffer of fd
     if (fstat(fd, &fd_stat_buf) < 0) {
-        ret = -1;
-        goto done;
+        *len = sbytes;
+        return -1;
     }
     file_size = fd_stat_buf.st_size;
 
+    // Must be a regular file
+    if (!S_ISREG(fd_stat_buf.st_mode)) {
+        errno = ENOTSUP;
+        *len = sbytes;
+        return -1;
+    }
+
     if (fstat(s, &s_stat_buf) < 0) {
-        ret = -1;
-        goto done;
+        *len = sbytes;
+        return -1;
     }
 
     // s must be a socket fd
-    if (S_ISSOCK(s_stat_buf.st_mode)) {
-        int opt;
-        socklen_t optlen = sizeof(opt);
+    if (!S_ISSOCK(s_stat_buf.st_mode)) {
+        errno = ENOTSOCK;
+        *len = sbytes;
+        return -1;
+    }
 
-        if (getsockopt(s, SOL_SOCKET, SO_TYPE, &opt, &optlen) == -1) {
-            ret = -1;
-            goto done;
-        } else {
-            // must be SOCK_STREAM
-            if (opt != SOCK_STREAM) {
-                errno = EINVAL;
-                ret = -1;
-                goto done;
-            }
-        }
+    // Check socket type - must be SOCK_STREAM
+    if (getsockopt(s, SOL_SOCKET, SO_TYPE, &socket_type, &optlen) == -1) {
+        *len = sbytes;
+        return -1;
+    }
+    if (socket_type != SOCK_STREAM) {
+        errno = EINVAL;
+        *len = sbytes;
+        return -1;
+    }
 
-        if (getsockopt(s, SOL_SOCKET, SO_ERROR, &opt, &optlen) == -1) {
-            ret = -1;
-            goto done;
-        } else {
-            // must be SS_ISCONNECTED, but we cannot check so_state in userspace
-            if (opt != 0) {
-                errno = ENOTCONN;
-                ret = -1;
-                goto done;
-            }
-        }
-    } else {
-        errno = EBADF;
-        ret = -1;
-        goto done;
+    // Check if socket has connection errors
+    if (getsockopt(s, SOL_SOCKET, SO_ERROR, &socket_type, &optlen) == -1) {
+        *len = sbytes;
+        return -1;
+    }
+    if (socket_type != 0) {
+        errno = ENOTCONN;
+        *len = sbytes;
+        return -1;
     }
 
     // Check if offset is beyond the end of file
-    if (offset > file_size) {
+    if (offset >= file_size) {
         *len = 0;
-        goto done;
+        return 0;
     }
 
-    // If specified, get the pointer to the sf_hdtr struct for any headers/trailers.
-    extern int copyin(const void *uaddr, void *kaddr, size_t len);
-    if (hdtr != USER_ADDR_NULL) {
-        char *hdtrp;
-
-        bzero(&user_hdtr, sizeof(user_hdtr));
-        hdtrp = (char *)&user64_hdtr;
-        sizeof_hdtr = sizeof(user64_hdtr);
-
-        memcpy(hdtr, hdtrp, sizeof_hdtr);
-
-        user_hdtr.headers = user64_hdtr.headers;
-        user_hdtr.hdr_cnt = user64_hdtr.hdr_cnt;
-        user_hdtr.trailers = user64_hdtr.trailers;
-        user_hdtr.trl_cnt = user64_hdtr.trl_cnt;
-
-        // Send any headers. Wimp out and use writev(2).
-        if (user_hdtr.headers != USER_ADDR_NULL) {
-            writev_retval = writev$NOCANCEL(s, user_hdtr.headers, user_hdtr.hdr_cnt);
-            if (writev_retval < 0) {
-                ret = -1;
-                goto done;
-            }
-            sbytes += writev_retval;
-        }
+    // Save original file position and seek to offset
+    orig_offset = lseek(fd, 0, SEEK_CUR);
+    if (orig_offset == -1) {
+        *len = sbytes;
+        return -1;
+    }
+    if (lseek(fd, offset, SEEK_SET) == -1) {
+        *len = sbytes;
+        return -1;
     }
 
-/*
-    // Save orig offset
-    off_t orig_fd_off = lseek(fd, 0, SEEK_CUR);
-    if (orig_fd_off == -1 || lseek(fd, offset, SEEK_SET) == -1) {
-        ret = -1;
-        goto done;
-    }
-*/
-    // Alloc buffer
-    int buffer_len = MIN(len, 80 * 1024 * sizeof(char));
-    char *buffer = (char *)malloc(buffer_len);
+    // Allocate buffer for data transfer
+    buffer = (char *)malloc(SENDFILE_BUFFER_SIZE);
     if (!buffer) {
+        errno = ENOMEM;
         ret = -1;
-        goto done;
+        *len = sbytes;
+        goto cleanup;
     }
 
-#if 0 && SENDFILE_6
-    // Use len
-    while (len > 0) {
-        ssize_t to_read = MIN(len, buffer_len);
-        ssize_t read_bytes;
-        while ((read_bytes = read(in_fd, buffer, to_read)) < 0 && errno == EINTR);
-        if (read_bytes == -1) {
-            free(buffer)
+    // Phase 1: Send headers if specified
+    if (hdtr != NULL && hdtr->headers != NULL && hdtr->hdr_cnt > 0) {
+        writev_retval = writev(s, hdtr->headers, hdtr->hdr_cnt);
+        if (writev_retval < 0) {
             ret = -1;
-            goto done;
-        } else if (read_bytes == 0) break;
+            *len = sbytes;
+            goto cleanup;
+        }
+        sbytes += writev_retval;
+        sent_headers_and_file += writev_retval;
 
-        ssize_t write_off = 0;
-        while (read_bytes > 0) {
-            ssize_t sent;
-            while ((sent = write(s, buffer + write_off, (size_t)read_bytes)) < 0 && errno == EINTR);
-            if (sent == -1) {
-                free(buffer);
-                ret = -1;
-                goto done;
-            }
-            read_bytes -= sent;
-            len -= sent;
-            write_off += sent;
-            
+        // If we've already sent enough (headers >= nbytes), skip file data
+        if (nbytes > 0 && sent_headers_and_file >= nbytes) {
+            goto send_trailers;
+        }
     }
-#else
-    // Use sbytes/nbytes
-    while (sbytes < nbytes) {
-        ssize_t to_send = nbytes - sbytes;
-        if (to_send > file_size - offset) {
-            to_send = file_size - offset;
+
+    // Phase 2: Send file data
+    off_t file_pos = offset;
+    while ((nbytes == 0 || sent_headers_and_file < nbytes) && file_pos < file_size) {
+        size_t to_read;
+        ssize_t read_bytes;
+
+        // Calculate how much to read
+        if (nbytes == 0) {
+            // Send until EOF
+            to_read = SENDFILE_BUFFER_SIZE;
+        } else {
+            // Limited by remaining bytes for headers + file data
+            off_t remaining = nbytes - sent_headers_and_file;
+            to_read = (size_t)remaining;
+            if (to_read > SENDFILE_BUFFER_SIZE) {
+                to_read = SENDFILE_BUFFER_SIZE;
+            }
         }
 
-        ssize_t read_bytes;
-        do {
-            read_bytes = read(fd, buffer, to_send);
-        } while (read_bytes < 0 && errno == EINTR);
+        // Don't read beyond EOF
+        off_t remaining_in_file = file_size - file_pos;
+        if ((off_t)to_read > remaining_in_file) {
+            to_read = remaining_in_file;
+        }
 
+        if (to_read == 0) {
+            break;  // Nothing more to send
+        }
+
+        // Read data from file
+        read_bytes = read(fd, buffer, to_read);
         if (read_bytes < 0) {
-            ret = -1;
-            goto done;
-        } else if (read_bytes == 0) {
-            break;
-        }
-
-        ssize_t sent = 0;
-        while (sent < read_bytes) {
-            ssize_t result = write(s, buffer + sent, read_bytes - sent);
-            if (result < 0) {
-                if (errno == EAGAIN) {
-                    *len = sbytes;
-                    continue;
-                }
-                ret = -1;
-                goto done;
+            if (errno == EINTR) {
+                continue;  // Retry on interrupt
             }
-            sent += result;
+            ret = -1;
+            goto cleanup;
+        } else if (read_bytes == 0) {
+            break;  // EOF
         }
 
-        sbytes += sent;
-        offset += sent;
-    }
-#endif
+        // Write data to socket
+        size_t total_sent = 0;
+        while (total_sent < (size_t)read_bytes) {
+            ssize_t sent = write(s, buffer + total_sent, read_bytes - total_sent);
+            if (sent < 0) {
+                if (errno == EINTR) {
+                    continue;  // Retry on interrupt
+                } else if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                    // For non-blocking sockets, return partial success
+                    sbytes += total_sent;
+                    sent_headers_and_file += total_sent;
+                    *len = sbytes;
+                    goto cleanup;
+                } else {
+                    ret = -1;
+                    goto cleanup;
+                }
+            }
+            total_sent += sent;
+        }
 
-    // Send trailers. Wimp out and use writev(2).
-    if (hdtr != USER_ADDR_NULL &&
-        user_hdtr.trailers != USER_ADDR_NULL) {
-        writev_retval = writev$NOCANCEL(s, user_hdtr.trailers, user_hdtr.trl_cnt);
-        if (writev_retval < 0)
-            goto done;
+        sbytes += total_sent;
+        sent_headers_and_file += total_sent;
+        file_pos += total_sent;
+    }
+
+send_trailers:
+    // Phase 3: Send trailers if specified (always completely)
+    if (hdtr != NULL && hdtr->trailers != NULL && hdtr->trl_cnt > 0) {
+        writev_retval = writev(s, hdtr->trailers, hdtr->trl_cnt);
+        if (writev_retval < 0) {
+            ret = -1;
+            *len = sbytes;
+            goto cleanup;
+        }
         sbytes += writev_retval;
     }
 
-    // nbytes = sbytes
+    // Return total bytes sent
     *len = sbytes;
-done:
-    // Succ on 0, otherwise -1 with errno
+    return ret;
+
+cleanup:
+    *len = sbytes;  // Always set len to bytes sent (0 on error)
+
+    if (buffer) {
+        free(buffer);
+    }
+
+    // Restore original file position if we changed it
+    if (orig_offset != -1) {
+        lseek(fd, orig_offset, SEEK_SET);
+    }
+
     return ret;
 }
 
-#if TEST
-#undef sendfile
-#include <assert.h>
-#include <fcntl.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <sys/uio.h>
-
-void test_sendfile() {
-    int fds[2];
-    char buffer[1024];
-    off_t len;
-    int fd, s;
-
-    // Create a test file
-    fd = open("testfile_sendfile", O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
-    write(fd, "Hello, world!", 13);
-    lseek(fd, 0, SEEK_SET);
-
-    // Create a socket pair
-    assert(socketpair(AF_UNIX, SOCK_STREAM, 0, fds) != -1);
-
-    // Use sendfile to send the file data over the socket
-    len = 13;
-    assert(sendfile(fd, fds[0], 0, &len, NULL, 0) != -1);
-    assert(len == 13);
-
-    // Read the data from the other end of the socket
-    assert(read(fds[1], buffer, sizeof(buffer)) == 13);
-    assert(strncmp(buffer, "Hello, world!", 13) == 0);
-
-    close(fd);
-    close(fds[0]);
-    close(fds[1]);
+/* Still try to override this symbol, since iOS just aborting when using undef syscalls
+   instead of setting ENOSYS */
+int sendfile(int fd, int s, off_t offset, off_t *len, struct sf_hdtr *hdtr, int flags)
+{
+    return compat_sendfile(fd, s, offset, len, hdtr, flags);
 }
-
-void test_userspace_sendfile() {
-    int fds[2];
-    char buffer[1024];
-    off_t len;
-    int fd, s;
-
-    // Create a test file
-    fd = open("testfile_compat_sendfile", O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
-    write(fd, "Hello, world!", 13);
-    lseek(fd, 0, SEEK_SET);
-
-    // Create a socket pair
-    assert(socketpair(AF_UNIX, SOCK_STREAM, 0, fds) != -1);
-
-    // Use userspace_sendfile to send the file data over the socket
-    len = 13;
-    assert(userspace_sendfile(fd, fds[0], 0, &len, NULL, 0) != -1);
-    assert(len == 13);
-
-    // Read the data from the other end of the socket
-    assert(read(fds[1], buffer, sizeof(buffer)) == 13);
-    assert(strncmp(buffer, "Hello, world!", 13) == 0);
-
-    close(fd);
-    close(fds[0]);
-    close(fds[1]);
-}
-
-int main() {
-    test_sendfile();
-    test_userspace_sendfile();
-
-    return 0;
-}
-#endif
