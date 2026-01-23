@@ -23,6 +23,12 @@
 #define getopt_long_only compat_getopt_long_only
 #endif
 
+#ifdef  __USE_POSIX2
+/* Get definitions and prototypes for functions to process the
+   arguments in ARGV (ARGC of them, minus the program name) for
+   options given in OPTS.  */
+# include <bits/getopt_posix.h>
+#endif
 #endif
 
 #if defined(LIBRECOMPAT_ROOTLESS) && LIBRECOMPAT_ROOTLESS != 0
@@ -36,13 +42,6 @@ void endusershell(void) __asm("_compat_endusershell");
 #endif
 
 #include_next <unistd.h>
-
-#ifdef  __USE_POSIX2
-/* Get definitions and prototypes for functions to process the
-   arguments in ARGV (ARGC of them, minus the program name) for
-   options given in OPTS.  */
-# include <bits/getopt_posix.h>
-#endif
 
 __BEGIN_DECLS
 

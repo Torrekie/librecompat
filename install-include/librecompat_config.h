@@ -15,4 +15,9 @@
 #define LIBRECOMPAT_GETOPT 0
 #endif
 
+/* Disable glibc regex by default */
+#ifndef LIBRECOMPAT_REGEX
+#define LIBRECOMPAT_REGEX 0
+#endif
+
 #endif
