@@ -1,13 +1,3 @@
-#if __has_include(<librecompat/librecompat_config.h>)
-#include <librecompat/librecompat_config.h>
-#elif __has_include("librecompat_config.h")
-#include "librecompat_config.h"
-#else
-#include <librecompat_config.h>
-#endif
-
-/* You should only use this when a project has no POSIX fallbacks */
-#if defined(LIBRECOMPAT_REGEX) && LIBRECOMPAT_REGEX != 0
 /* Definitions for data structures and routines for the regular
    expression library.
    Copyright (C) 1985, 1989-2025 Free Software Foundation, Inc.
@@ -37,16 +27,8 @@
 extern "C" {
 #endif
 
-#ifdef __APPLE__
-#define _REGEX_LARGE_OFFSETS 1
-#endif
-
 /* Define __USE_GNU to declare GNU extensions that violate the
    POSIX name space rules.  */
-/* Torrekie: this is enabled by defining _GNU_SOURCE by design,
-   but such definitions seems always problematic when building
-   Darwin stuff, so we forced this to be enabled because in
-   librecompat, we disables LIBRECOMPAT_REGEX by default. */
 #define __USE_GNU 1
 
 #ifdef _REGEX_LARGE_OFFSETS
@@ -692,32 +674,20 @@ extern int re_exec (const char *);
 #endif
 
 /* POSIX compatibility.  */
-extern int regcomp (regex_t *_Restrict_ __preg,
-		    const char *_Restrict_ __pattern,
-		    int __cflags) __asm("_compat_regcomp");
 extern int compat_regcomp (regex_t *_Restrict_ __preg,
 		    const char *_Restrict_ __pattern,
 		    int __cflags);
 
-extern int regexec (const regex_t *_Restrict_ __preg,
-		    const char *_Restrict_ __String, size_t __nmatch,
-		    regmatch_t __pmatch[_Restrict_arr_
-					_REGEX_NELTS (__nmatch)],
-		    int __eflags) __asm("_compat_regexec");
 extern int compat_regexec (const regex_t *_Restrict_ __preg,
 		    const char *_Restrict_ __String, size_t __nmatch,
 		    regmatch_t __pmatch[_Restrict_arr_
 					_REGEX_NELTS (__nmatch)],
 		    int __eflags);
 
-extern size_t regerror (int __errcode, const regex_t *_Restrict_ __preg,
-			char *_Restrict_ __errbuf, size_t __errbuf_size)
-    _Attr_access_ ((__write_only__, 3, 4)) __asm("_compat_regerror");
 extern size_t compat_regerror (int __errcode, const regex_t *_Restrict_ __preg,
 			char *_Restrict_ __errbuf, size_t __errbuf_size)
     _Attr_access_ ((__write_only__, 3, 4));
 
-extern void regfree (regex_t *__preg) __asm("_compat_regfree");
 extern void compat_regfree (regex_t *__preg);
 
 #if defined __GNUC__ && 4 < __GNUC__ + (6 <= __GNUC_MINOR__)
@@ -729,7 +699,3 @@ extern void compat_regfree (regex_t *__preg);
 #endif	/* C++ */
 
 #endif /* regex.h */
-
-#else
-#include_next <regex.h>
-#endif /* LIBRECOMPAT_REGEX */

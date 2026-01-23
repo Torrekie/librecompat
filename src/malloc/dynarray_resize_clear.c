@@ -1,5 +1,5 @@
 /* Increase the size of a dynamic array and clear the new part.
-   Copyright (C) 2017-2023 Free Software Foundation, Inc.
+   Copyright (C) 2017-2025 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -16,11 +16,8 @@
    License along with the GNU C Library; if not, see
    <https://www.gnu.org/licenses/>.  */
 
-#include "dynarray_common.h"
+#include "dynarray.h"
 #include <string.h>
-
-bool __libc_dynarray_resize (struct dynarray_header *, size_t size,
-			     void *scratch, size_t element_size);
 
 bool
 __libc_dynarray_resize_clear (struct dynarray_header *list, size_t size,

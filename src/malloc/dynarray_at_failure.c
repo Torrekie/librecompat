@@ -1,5 +1,5 @@
 /* Report an dynamic array index out of bounds condition.
-   Copyright (C) 2017-2023 Free Software Foundation, Inc.
+   Copyright (C) 2017-2025 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -16,8 +16,8 @@
    License along with the GNU C Library; if not, see
    <https://www.gnu.org/licenses/>.  */
 
-#include "dynarray_common.h"
-#include <stdlib.h>
+#include "dynarray.h"
+#include <stdio.h>
 
 void
 __libc_dynarray_at_failure (size_t size, size_t index)

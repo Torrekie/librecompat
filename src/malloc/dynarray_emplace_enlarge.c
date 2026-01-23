@@ -1,5 +1,5 @@
-/* Increase the size of a dynamic array.
-   Copyright (C) 2017-2023 Free Software Foundation, Inc.
+/* Increase the size of a dynamic array in preparation of an emplace operation.
+   Copyright (C) 2017-2025 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -16,47 +16,56 @@
    License along with the GNU C Library; if not, see
    <https://www.gnu.org/licenses/>.  */
 
-#include "dynarray_common.h"
+#include "dynarray.h"
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
 
 bool
-__libc_dynarray_resize (struct dynarray_header *list, size_t size,
-                        void *scratch, size_t element_size)
+__libc_dynarray_emplace_enlarge (struct dynarray_header *list,
+                                 void *scratch, size_t element_size)
 {
-  /* The existing allocation provides sufficient room.  */
-  if (size <= list->allocated)
+  size_t new_allocated;
+  if (list->allocated == 0)
     {
-      list->used = size;
-      return true;
+      /* No scratch buffer provided.  Choose a reasonable default
+         size.  */
+      if (element_size < 4)
+        new_allocated = 16;
+      else if (element_size < 8)
+        new_allocated = 8;
+      else
+        new_allocated = 4;
+    }
+  else
+    /* Increase the allocated size, using an exponential growth
+       policy.  */
+    {
+      new_allocated = list->allocated + list->allocated / 2 + 1;
+      if (new_allocated <= list->allocated)
+        {
+          /* Overflow.  */
+          errno = ENOMEM;
+          return false;
+        }
     }
 
-  /* Otherwise, use size as the new allocation size.  The caller is
-     expected to provide the final size of the array, so there is no
-     over-allocation here.  */
-
-  size_t new_size_bytes;
-  if (__builtin_mul_overflow (size, element_size, &new_size_bytes))
-    {
-      /* Overflow.  */
-      errno = ENOMEM;
-      return false;
-    }
+  size_t new_size;
+  if (__builtin_mul_overflow (new_allocated, element_size, &new_size))
+    return false;
   void *new_array;
   if (list->array == scratch)
     {
       /* The previous array was not heap-allocated.  */
-      new_array = malloc (new_size_bytes);
+      new_array = malloc (new_size);
       if (new_array != NULL && list->array != NULL)
         memcpy (new_array, list->array, list->used * element_size);
     }
   else
-    new_array = realloc (list->array, new_size_bytes);
+    new_array = realloc (list->array, new_size);
   if (new_array == NULL)
     return false;
   list->array = new_array;
-  list->allocated = size;
-  list->used = size;
+  list->allocated = new_allocated;
   return true;
 }

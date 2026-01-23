@@ -1,5 +1,5 @@
 /* Copy the dynamically-allocated area to an explicitly-sized heap allocation.
-   Copyright (C) 2017-2023 Free Software Foundation, Inc.
+   Copyright (C) 2017-2025 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -16,7 +16,7 @@
    License along with the GNU C Library; if not, see
    <https://www.gnu.org/licenses/>.  */
 
-#include "dynarray_common.h"
+#include "dynarray.h"
 #include <stdlib.h>
 #include <string.h>
 

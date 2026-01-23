@@ -1,5 +1,5 @@
 /* Extended regular expression matching and search library.
-   Copyright (C) 2002-2023 Free Software Foundation, Inc.
+   Copyright (C) 2002-2025 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Isamu Hasegawa <isamu@yamato.ibm.com>.
 
@@ -24,20 +24,21 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <limits.h>
+
 #include <langinfo.h>
 #include <locale.h>
 #include <wchar.h>
 #include <wctype.h>
 #include <stdbool.h>
 #include <stdint.h>
-#include "regex_common.h"
+
+#include "../malloc/dynarray.h"
 
 #if defined DEBUG && DEBUG != 0
 # include <assert.h>
 # define DEBUG_ASSERT(x) assert (x)
 #else
-# define DEBUG_ASSERT(x) assume (x)
+# define DEBUG_ASSERT(x) __builtin_assume (x)
 #endif
 
 #include <pthread.h>
@@ -47,25 +48,30 @@
 #define lock_lock(lock) pthread_mutex_lock (&(lock))
 #define lock_unlock(lock) pthread_mutex_unlock (&(lock))
 
+/* In case that the system doesn't have isblank().  */
+#if !defined _LIBC && ! (defined isblank || (HAVE_ISBLANK && HAVE_DECL_ISBLANK))
+# define isblank(ch) ((ch) == ' ' || (ch) == '\t')
+#endif
+
 /* regex code assumes isascii has its usual numeric meaning,
    even if the portable character set uses EBCDIC encoding,
    and even if wint_t is wider than int.  */
-#ifndef _LIBC
-# undef isascii
-# define isascii(c) (((c) & ~0x7f) == 0)
-#endif
+#undef isascii
+#define isascii(c) (((c) & ~0x7f) == 0)
 
-/* This is for other GNU distributions with internationalized messages.  */
-#ifdef gettext
-#undef gettext
+#ifndef USE_NLS
+#define gettext(x) x
+#else
+#include <libintl.h>
 #endif
-#define gettext(msgid) (msgid)
 
 #ifndef gettext_noop
 /* This define is so xgettext can find the internationalizable
    strings.  */
 # define gettext_noop(String) String
 #endif
+
+#define RE_ENABLE_I18N
 
 /* Number of ASCII characters.  */
 #define ASCII_CHARS 0x80
@@ -78,20 +84,6 @@
 /* The character which represents newline.  */
 #define NEWLINE_CHAR '\n'
 #define WIDE_NEWLINE_CHAR L'\n'
-
-# undef __wctype
-# undef __iswalnum
-# undef __iswctype
-# undef __towlower
-# undef __towupper
-# define __wctype wctype
-# define __iswalnum iswalnum
-# define __iswctype iswctype
-# define __towlower towlower
-# define __towupper towupper
-# define __btowc btowc
-# define __mbrtowc mbrtowc
-# define __wcrtomb wcrtomb
 
 #ifndef SSIZE_MAX
 # define SSIZE_MAX ((ssize_t) (SIZE_MAX / 2))
@@ -391,10 +383,8 @@ typedef struct re_dfa_t re_dfa_t;
 #define re_string_skip_bytes(pstr,idx) ((pstr)->cur_idx += (idx))
 #define re_string_set_index(pstr,idx) ((pstr)->cur_idx = (idx))
 
-#ifdef _LIBC
-# define MALLOC_0_IS_NONNULL 1
-#elif !defined MALLOC_0_IS_NONNULL
-# define MALLOC_0_IS_NONNULL 0
+#ifdef __APPLE__
+#define MALLOC_0_IS_NONNULL 1
 #endif
 
 #ifndef MAX
@@ -447,7 +437,7 @@ typedef struct bin_tree_storage_t bin_tree_storage_t;
 
 #define IS_WORD_CHAR(ch) (isalnum (ch) || (ch) == '_')
 #define IS_NEWLINE(ch) ((ch) == NEWLINE_CHAR)
-#define IS_WIDE_WORD_CHAR(ch) (__iswalnum (ch) || (ch) == L'_')
+#define IS_WIDE_WORD_CHAR(ch) (iswalnum (ch) || (ch) == L'_')
 #define IS_WIDE_NEWLINE(ch) ((ch) == WIDE_NEWLINE_CHAR)
 
 #define NOT_SATISFY_PREV_CONSTRAINT(constraint,context) \

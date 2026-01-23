@@ -1,5 +1,5 @@
 /* Type-safe arrays which grow dynamically.
-   Copyright (C) 2017-2023 Free Software Foundation, Inc.
+   Copyright (C) 2017-2025 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -85,36 +85,11 @@
        (if DYNARRAY_FINAL_TYPE is not defined)
 */
 
+#include <malloc/dynarray.h>
+
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
-
-struct dynarray_header
-{
-  size_t used;
-  size_t allocated;
-  void *array;
-};
-
-struct dynarray_finalize_result
-{
-  void *array;
-  size_t length;
-};
-
-#define likely(cond) __builtin_expect((cond), 1)
-#define unlikely(cond) __builtin_expect((cond), 0)
-
-extern bool __libc_dynarray_emplace_enlarge (struct dynarray_header *,
-					     void *scratch, size_t element_size);
-extern bool __libc_dynarray_resize (struct dynarray_header *, size_t size,
-				    void *scratch, size_t element_size);
-extern bool __libc_dynarray_resize_clear (struct dynarray_header *, size_t size,
-				    void *scratch, size_t element_size);
-extern bool __libc_dynarray_finalize (struct dynarray_header *list, void *scratch,
-				      size_t element_size,
-				      struct dynarray_finalize_result *result);
-extern void __libc_dynarray_at_failure (size_t size, size_t index);
 
 #ifndef DYNARRAY_STRUCT
 # error "DYNARRAY_STRUCT must be defined"
@@ -143,6 +118,24 @@ extern void __libc_dynarray_at_failure (size_t size, size_t index);
 # define DYNARRAY_INITIAL_SIZE \
   (sizeof (DYNARRAY_ELEMENT) > 64 ? 2 : 128 / sizeof (DYNARRAY_ELEMENT))
 # define DYNARRAY_HAVE_SCRATCH 1
+#endif
+
+/* Torrekie: reduce patches, and possibly fills potential undefs */
+#ifndef likely
+#define likely(expr) __builtin_expect(!!(expr), 1)
+#endif
+
+#ifndef unlikely
+#define unlikely(expr) __builtin_expect(!!(expr), 0)
+#endif
+
+/* Define some glibc-specific macros that the regex code expects */
+#ifndef __glibc_likely
+#define __glibc_likely(expr) likely(expr)
+#endif
+
+#ifndef __glibc_unlikely
+#define __glibc_unlikely(expr) unlikely(expr)
 #endif
 
 /* Public type definitions.  */
@@ -217,6 +210,7 @@ DYNARRAY_NAME (free__array__) (struct DYNARRAY_STRUCT *list)
 
 /* Initialize a dynamic array object.  This must be called before any
    use of the object.  */
+__attribute__((nonnull(1)))
 static void
 DYNARRAY_NAME (init) (struct DYNARRAY_STRUCT *list)
 {
@@ -226,7 +220,7 @@ DYNARRAY_NAME (init) (struct DYNARRAY_STRUCT *list)
 }
 
 /* Deallocate the dynamic array and its elements.  */
-__attribute__ ((__unused__))
+__attribute__((unused, nonnull(1)))
 static void
 DYNARRAY_FREE (struct DYNARRAY_STRUCT *list)
 {
@@ -237,14 +231,16 @@ DYNARRAY_FREE (struct DYNARRAY_STRUCT *list)
 }
 
 /* Return true if the dynamic array is in an error state.  */
+__attribute__((nonnull(1)))
 static inline bool
 DYNARRAY_NAME (has_failed) (const struct DYNARRAY_STRUCT *list)
 {
-  return list->u.dynarray_header.allocated == -1;
+  return list->u.dynarray_header.allocated == __dynarray_error_marker ();
 }
 
 /* Mark the dynamic array as failed.  All elements are deallocated as
    a side effect.  */
+__attribute__((nonnull(1)))
 static void
 DYNARRAY_NAME (mark_failed) (struct DYNARRAY_STRUCT *list)
 {
@@ -253,11 +249,12 @@ DYNARRAY_NAME (mark_failed) (struct DYNARRAY_STRUCT *list)
   DYNARRAY_NAME (free__array__) (list);
   list->u.dynarray_header.array = DYNARRAY_SCRATCH (list);
   list->u.dynarray_header.used = 0;
-  list->u.dynarray_header.allocated = -1;
+  list->u.dynarray_header.allocated = __dynarray_error_marker ();
 }
 
 /* Return the number of elements which have been added to the dynamic
    array.  */
+__attribute__((nonnull(1)))
 static inline size_t
 DYNARRAY_NAME (size) (const struct DYNARRAY_STRUCT *list)
 {
@@ -266,10 +263,11 @@ DYNARRAY_NAME (size) (const struct DYNARRAY_STRUCT *list)
 
 /* Return a pointer to the array element at INDEX.  Terminate the
    process if INDEX is out of bounds.  */
+__attribute__((nonnull(1)))
 static inline DYNARRAY_ELEMENT *
 DYNARRAY_NAME (at) (struct DYNARRAY_STRUCT *list, size_t index)
 {
-  if (unlikely (index >= DYNARRAY_NAME (size) (list)))
+  if (__glibc_unlikely (index >= DYNARRAY_NAME (size) (list)))
     __libc_dynarray_at_failure (DYNARRAY_NAME (size) (list), index);
   return list->u.dynarray_header.array + index;
 }
@@ -277,6 +275,7 @@ DYNARRAY_NAME (at) (struct DYNARRAY_STRUCT *list, size_t index)
 /* Return a pointer to the first array element, if any.  For a
    zero-length array, the pointer can be NULL even though the dynamic
    array has not entered the failure state.  */
+__attribute__((nonnull(1)))
 static inline DYNARRAY_ELEMENT *
 DYNARRAY_NAME (begin) (struct DYNARRAY_STRUCT *list)
 {
@@ -286,6 +285,7 @@ DYNARRAY_NAME (begin) (struct DYNARRAY_STRUCT *list)
 /* Return a pointer one element past the last array element.  For a
    zero-length array, the pointer can be NULL even though the dynamic
    array has not entered the failure state.  */
+__attribute__((nonnull(1)))
 static inline DYNARRAY_ELEMENT *
 DYNARRAY_NAME (end) (struct DYNARRAY_STRUCT *list)
 {
@@ -296,7 +296,7 @@ DYNARRAY_NAME (end) (struct DYNARRAY_STRUCT *list)
 static void
 DYNARRAY_NAME (add__) (struct DYNARRAY_STRUCT *list, DYNARRAY_ELEMENT item)
 {
-  if (unlikely
+  if (__glibc_unlikely
       (!__libc_dynarray_emplace_enlarge (&list->u.dynarray_abstract,
                                          DYNARRAY_SCRATCH (list),
                                          sizeof (DYNARRAY_ELEMENT))))
@@ -312,6 +312,7 @@ DYNARRAY_NAME (add__) (struct DYNARRAY_STRUCT *list, DYNARRAY_ELEMENT item)
 /* Add ITEM at the end of the array, enlarging it by one element.
    Mark *LIST as failed if the dynamic array allocation size cannot be
    increased.  */
+__attribute__((nonnull(1)))
 static inline void
 DYNARRAY_NAME (add) (struct DYNARRAY_STRUCT *list, DYNARRAY_ELEMENT item)
 {
@@ -320,7 +321,7 @@ DYNARRAY_NAME (add) (struct DYNARRAY_STRUCT *list, DYNARRAY_ELEMENT item)
     return;
 
   /* Enlarge the array if necessary.  */
-  if (unlikely (list->u.dynarray_header.used
+  if (__glibc_unlikely (list->u.dynarray_header.used
                         == list->u.dynarray_header.allocated))
     {
       DYNARRAY_NAME (add__) (list, item);
@@ -351,7 +352,7 @@ DYNARRAY_NAME (emplace__tail__) (struct DYNARRAY_STRUCT *list)
 static DYNARRAY_ELEMENT *
 DYNARRAY_NAME (emplace__) (struct DYNARRAY_STRUCT *list)
 {
-  if (unlikely
+  if (__glibc_unlikely
       (!__libc_dynarray_emplace_enlarge (&list->u.dynarray_abstract,
                                          DYNARRAY_SCRATCH (list),
                                          sizeof (DYNARRAY_ELEMENT))))
@@ -365,7 +366,7 @@ DYNARRAY_NAME (emplace__) (struct DYNARRAY_STRUCT *list)
 /* Allocate a place for a new element in *LIST and return a pointer to
    it.  The pointer can be NULL if the dynamic array cannot be
    enlarged due to a memory allocation failure.  */
-__attribute__ ((__unused__)) __attribute__((__warn_unused_result__))
+__attribute__((unused, warn_unused_result, nonnull(1)))
 static
 /* Avoid inlining with the larger initialization code.  */
 #if !(defined (DYNARRAY_ELEMENT_INIT) || defined (DYNARRAY_ELEMENT_FREE))
@@ -379,7 +380,7 @@ DYNARRAY_NAME (emplace) (struct DYNARRAY_STRUCT *list)
     return NULL;
 
   /* Enlarge the array if necessary.  */
-  if (unlikely (list->u.dynarray_header.used
+  if (__glibc_unlikely (list->u.dynarray_header.used
                         == list->u.dynarray_header.allocated))
     return (DYNARRAY_NAME (emplace__) (list));
   return DYNARRAY_NAME (emplace__tail__) (list);
@@ -389,7 +390,7 @@ DYNARRAY_NAME (emplace) (struct DYNARRAY_STRUCT *list)
    existing size, new elements are added (which can be initialized).
    Otherwise, the list is truncated, and elements are freed.  Return
    false on memory allocation failure (and mark *LIST as failed).  */
-__attribute__ ((__unused__))
+__attribute__((unused, nonnull(1)))
 static bool
 DYNARRAY_NAME (resize) (struct DYNARRAY_STRUCT *list, size_t size)
 {
@@ -418,7 +419,7 @@ DYNARRAY_NAME (resize) (struct DYNARRAY_STRUCT *list, size_t size)
                                     size, DYNARRAY_SCRATCH (list),
                                     sizeof (DYNARRAY_ELEMENT));
 #endif
-      if (unlikely (!ok))
+      if (__glibc_unlikely (!ok))
         DYNARRAY_NAME (mark_failed) (list);
       return ok;
     }
@@ -434,7 +435,7 @@ DYNARRAY_NAME (resize) (struct DYNARRAY_STRUCT *list, size_t size)
 }
 
 /* Remove the last element of LIST if it is present.  */
-__attribute__ ((__unused__))
+__attribute__((unused, nonnull(1)))
 static void
 DYNARRAY_NAME (remove_last) (struct DYNARRAY_STRUCT *list)
 {
@@ -451,7 +452,7 @@ DYNARRAY_NAME (remove_last) (struct DYNARRAY_STRUCT *list)
 
 /* Remove all elements from the list.  The elements are freed, but the
    list itself is not.  */
-__attribute__ ((__unused__))
+__attribute__((unused, nonnull(1)))
 static void
 DYNARRAY_NAME (clear) (struct DYNARRAY_STRUCT *list)
 {
@@ -469,7 +470,7 @@ DYNARRAY_NAME (clear) (struct DYNARRAY_STRUCT *list)
    stored in *RESULT if LIST refers to an empty list.  On success, the
    pointer in *RESULT is heap-allocated and must be deallocated using
    free.  */
-__attribute__ ((__unused__)) __attribute__((__warn_unused_result__))
+__attribute_maybe_unused__ __attribute_warn_unused_result__ __nonnull ((1, 2))
 static bool
 DYNARRAY_NAME (finalize) (struct DYNARRAY_STRUCT *list,
                           DYNARRAY_FINAL_TYPE *result)
@@ -500,7 +501,7 @@ DYNARRAY_NAME (finalize) (struct DYNARRAY_STRUCT *list,
    have a sentinel at the end).  If LENGTHP is not NULL, the array
    length is written to *LENGTHP.  *LIST is re-initialized and can be
    reused.  */
-__attribute__ ((__unused__)) __attribute__((__warn_unused_result__))
+__attribute__((unused, warn_unused_result, nonnull(1)))
 static DYNARRAY_ELEMENT *
 DYNARRAY_NAME (finalize) (struct DYNARRAY_STRUCT *list, size_t *lengthp)
 {

@@ -36,20 +36,18 @@ SRCS=   src/argz/argz-addsep.c \
         src/dirent/versionsort64.c \
         src/fcntl/posix_fadvise.c \
         src/fcntl/posix_fallocate.c \
-        src/malloc/dynarray/dynarray_at_failure.c \
-        src/malloc/dynarray/dynarray_emplace_enlarge.c \
-        src/malloc/dynarray/dynarray_finalize.c \
-        src/malloc/dynarray/dynarray_resize.c \
-        src/malloc/dynarray/dynarray_resize_clear.c \
+        src/malloc/dynarray_at_failure.c \
+        src/malloc/dynarray_emplace_enlarge.c \
+        src/malloc/dynarray_finalize.c \
+        src/malloc/dynarray_resize.c \
+        src/malloc/dynarray_resize_clear.c \
         src/musl/network/lookup_serv.c \
         src/netdb/gethostbyname_r.c \
         src/netdb/getservbyname_r.c \
         src/netdb/getservbyport_r.c \
         src/netdb/servent_r.c \
         src/poll/ppoll.c \
-        src/regex/regcomp.c \
-        src/regex/regex_internal.c \
-        src/regex/regexec.c \
+        src/regex/regex.c \
         src/search/hsearch_r.c \
         src/search/tsearch.c \
         src/stdlib/init_misc.c \
