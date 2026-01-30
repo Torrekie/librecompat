@@ -46,7 +46,6 @@ WITH THE ACCESS, USE OR PERFORMANCE OF THIS SOFTWARE.
 #ifndef _WORDEXP_H
 #define _WORDEXP_H
 
-#include <libiosfunc.h>
 #include <sys/cdefs.h>
 #include <_types.h>
 #include <sys/_types/_size_t.h>
