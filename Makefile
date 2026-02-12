@@ -66,7 +66,8 @@ SRCS=   src/argz/argz-addsep.c \
         src/unistd/get_current_dir_name.c \
         src/unistd/getopt.c \
         src/unistd/getopt1.c \
-        src/wordexp/wordexp.c
+        src/wordexp/wordexp.c \
+        src/gen/pw_scan.c
 
 ifeq ($(ROOTLESS),1)
 SRCS += src/locale/setlocale.c \

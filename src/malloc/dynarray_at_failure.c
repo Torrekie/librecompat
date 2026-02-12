@@ -17,7 +17,7 @@
    <https://www.gnu.org/licenses/>.  */
 
 #include "dynarray.h"
-#include <stdio.h>
+#include <stdlib.h>
 
 void
 __libc_dynarray_at_failure (size_t size, size_t index)

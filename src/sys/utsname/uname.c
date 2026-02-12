@@ -5,8 +5,7 @@
 
 // Historical reasons
 int
-ie_uname(name)
-	struct utsname *name;
+ie_uname(struct utsname *name)
 {
 	int mib[2], rval;
 	size_t len;
