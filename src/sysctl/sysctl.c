@@ -52,12 +52,19 @@ __FBSDID(
 #endif
 
 int compat_sysctl(int *name, u_int namelen, void *oldp, size_t *oldlenp, void *newp,
-		   size_t newlen) __attribute__((disable_tail_calls)) {
-	switch (name[1]) {
-	case USER_CS_PATH:
-		if (oldp && *oldlenp < sizeof(_PATH_STDPATH)) {
+			   size_t newlen) __attribute__((disable_tail_calls)) {
+	if (name != NULL && namelen == 2 && name[0] == CTL_USER && name[1] == USER_CS_PATH) {
+		if (newp != NULL || newlen != 0) {
+			errno = EPERM;
+			return (-1);
+		}
+		if (oldlenp == NULL) {
+			errno = EINVAL;
+			return (-1);
+		}
+		if (oldp != NULL && *oldlenp < sizeof(_PATH_STDPATH)) {
 			errno = ENOMEM;
-			return -1;
+			return (-1);
 		}
 		*oldlenp = sizeof(_PATH_STDPATH);
 		if (oldp != NULL)
