@@ -60,6 +60,8 @@ void compat_setusershell(void);
 void compat_endusershell(void);
 #endif
 
+void setproctitle(const char *fmt, ...);
+void setproctitle_fast(const char *fmt, ...);
 
 __END_DECLS
 
