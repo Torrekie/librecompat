@@ -80,10 +80,18 @@ __pw_initpwd(struct passwd *pwd)
 int
 __pw_scan(char *bp, struct passwd *pw, int flags)
 {
+#ifdef __APPLE__
+	id_t id;
+#else
 	uid_t id;
+#endif
 	int root;
 	char *ep, *p, *sh;
+#ifdef __APPLE__
+	long temp;
+#else
 	unsigned long temp;
+#endif
 
 	if (pw_big_ids_warning == -1)
 		pw_big_ids_warning = getenv("PW_SCAN_BIG_IDS") == NULL ? 1 : 0;
@@ -122,13 +130,22 @@ __pw_scan(char *bp, struct passwd *pw, int flags)
 		}
 	}
 	errno = 0;
+#ifdef __APPLE__
+	temp = strtol(p, &ep, 10);
+	if ((temp == LONG_MAX && errno == ERANGE) || temp > UID_MAX) {
+#else /* !__APPLE__ */
 	temp = strtoul(p, &ep, 10);
 	if ((temp == ULONG_MAX && errno == ERANGE) || temp > UID_MAX) {
+#endif /* !__APPLE__ */
 		if (flags & _PWSCAN_WARN)
 			warnx("%s > max uid value (%u)", p, UID_MAX);
 		return (0);
 	}
+#ifdef __APPLE__
+	id = (id_t)temp;
+#else /* !__APPLE__ */
 	id = temp;
+#endif /* !__APPLE__ */
 	if (*ep != '\0') {
 		if (flags & _PWSCAN_WARN)
 			warnx("%s uid is incorrect", p);
@@ -161,13 +178,22 @@ __pw_scan(char *bp, struct passwd *pw, int flags)
 		}
 	}
 	errno = 0;
+#ifdef __APPLE__
+	temp = strtol(p, &ep, 10);
+	if ((temp == LONG_MAX && errno == ERANGE) || temp > GID_MAX) {
+#else /* !__APPLE__ */
 	temp = strtoul(p, &ep, 10);
 	if ((temp == ULONG_MAX && errno == ERANGE) || temp > GID_MAX) {
+#endif /* !__APPLE__ */
 		if (flags & _PWSCAN_WARN)
 			warnx("%s > max gid value (%u)", p, GID_MAX);
 		return (0);
 	}
+#ifdef __APPLE__
+	id = (id_t)temp;
+#else /* !__APPLE__ */
 	id = temp;
+#endif /* !__APPLE__ */
 	if (*ep != '\0') {
 		if (flags & _PWSCAN_WARN)
 			warnx("%s gid is incorrect", p);
