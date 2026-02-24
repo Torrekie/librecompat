@@ -50,6 +50,37 @@ spt_join_argv(char **argv, int argc)
 }
 
 static int
+spt_detach_argv_locked(char **argv, int argc)
+{
+	char **dupv;
+	int i;
+
+	if (argv == NULL || argc <= 0)
+		return (0);
+
+	dupv = calloc((size_t)argc, sizeof(*dupv));
+	if (dupv == NULL)
+		return (0);
+
+	for (i = 0; i < argc && argv[i] != NULL; i++) {
+		dupv[i] = strdup(argv[i]);
+		if (dupv[i] == NULL)
+			break;
+	}
+	if (i < argc && argv[i] != NULL) {
+		while (i-- > 0)
+			free(dupv[i]);
+		free(dupv);
+		return (0);
+	}
+
+	for (i = 0; i < argc && argv[i] != NULL; i++)
+		argv[i] = dupv[i];
+	free(dupv);
+	return (1);
+}
+
+static int
 spt_prepare_space_locked(char **saved_argv)
 {
 	char ***pargvp;
@@ -113,6 +144,14 @@ spt_prepare_space_locked(char **saved_argv)
 	spt_start = argv[0];
 	spt_space_len = (size_t)(last - argv[0]) + 1;
 	if (spt_space_len <= 1)
+		return (0);
+
+	/*
+	 * setproctitle writes into the original contiguous argv/environ block.
+	 * Detach argv strings first so later users of argv don't see clobbered
+	 * title bytes.
+	 */
+	if (!spt_detach_argv_locked(argv, argc))
 		return (0);
 
 	if (getprogname() != NULL)
