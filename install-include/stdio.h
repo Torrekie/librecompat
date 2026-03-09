@@ -15,6 +15,7 @@
 #endif
 #endif
 
+#include <sys/_types/_ssize_t.h>
 #include_next <stdio.h>
 
 __BEGIN_DECLS

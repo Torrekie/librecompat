@@ -1,6 +1,7 @@
 #ifndef _LIBRECOMPAT_POLL_H_
 #define _LIBRECOMPAT_POLL_H_
 
+#include <sys/_types/_sigset_t.h>
 #include_next <poll.h>
 
 __BEGIN_DECLS
