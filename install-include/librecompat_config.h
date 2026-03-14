@@ -20,4 +20,9 @@
 #define LIBRECOMPAT_REGEX 0
 #endif
 
+/* Disable glibc glob by default (Not implemented yet) */
+#ifndef LIBRECOMPAT_GLOB
+#define LIBRECOMPAT_GLOB 0
+#endif
+
 #endif

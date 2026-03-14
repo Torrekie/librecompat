@@ -19,6 +19,14 @@
 #ifndef _GNU_VERSIONS_H
 #define _GNU_VERSIONS_H 1
 
+#if __has_include(<librecompat/librecompat_config.h>)
+#include <librecompat/librecompat_config.h>
+#elif __has_include("librecompat_config.h")
+#include "librecompat_config.h"
+#else
+#include <librecompat_config.h>
+#endif
+
 /* This file exists to define these few macros.  Each specifies a version
    number associated with the library interface of a piece of the C library
    which is also distributed with other GNU packages.  These pieces are
@@ -44,9 +52,15 @@
    number must change too (so avoid it)!  */
 
 #define _GNU_OBSTACK_INTERFACE_VERSION  1 /* vs malloc/obstack.c */
+#if defined(LIBRECOMPAT_REGEX) && LIBRECOMPAT_REGEX
 #define _GNU_REGEX_INTERFACE_VERSION    1 /* vs posix/regex.c */
+#endif
+#if defined(LIBRECOMPAT_GLOB) && LIBRECOMPAT_GLOB
 #define _GNU_GLOB_INTERFACE_VERSION     2 /* vs posix/glob.c */
+#endif
+#if defined(LIBRECOMPAT_GETOPT) && LIBRECOMPAT_GETOPT
 #define _GNU_GETOPT_INTERFACE_VERSION   2 /* vs posix/getopt.c and
                                              posix/getopt1.c */
+#endif
 
 #endif  /* gnu-versions.h */

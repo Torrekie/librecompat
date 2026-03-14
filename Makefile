@@ -41,6 +41,7 @@ SRCS=   src/argz/argz-addsep.c \
 	src/malloc/dynarray_finalize.c \
 	src/malloc/dynarray_resize.c \
 	src/malloc/dynarray_resize_clear.c \
+	src/malloc/obstack.c \
 	src/musl/network/lookup_serv.c \
 	src/netdb/gethostbyname_r.c \
 	src/netdb/getservbyname_r.c \
