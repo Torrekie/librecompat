@@ -4,6 +4,8 @@
 
 # ifndef _ISOMAC
 
+__BEGIN_DECLS
+
 extern error_t __argz_create_sep (const char *__restrict __string,
 				  int __sep, char **__restrict __argz,
 				  size_t *__restrict __len)
@@ -34,6 +36,8 @@ extern error_t __argz_replace (char **__restrict __argz,
 			       const char *__restrict __str,
 			       const char *__restrict __with,
 			       unsigned int *__restrict __replace_count);
+
+__END_DECLS
 
 # endif /* !_ISOMAC */
 #endif

@@ -25,6 +25,8 @@
    a protective #error, because the guard macro for getopt.h in
    gnulib is not fixed.  */
 
+#include <sys/cdefs.h>
+
 __BEGIN_DECLS
 
 /* For communication from 'getopt' to the caller.

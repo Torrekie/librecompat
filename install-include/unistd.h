@@ -36,9 +36,15 @@
 #define confstr compat_confstr
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 char *getusershell(void) __asm("_compat_getusershell");
 void setusershell(void) __asm("_compat_setusershell");
 void endusershell(void) __asm("_compat_endusershell");
+#ifdef __cplusplus
+}
+#endif
 #endif
 
 #include_next <unistd.h>
